@@ -369,7 +369,7 @@ const disconnectWallet = async () => {
 
 - [GitHub Repository](https://github.com/diamante-io/diamwallet-sdk)
 - [Issues](https://github.com/diamante-io/diamwallet-sdk/issues)
-- [Example Project](https://github.com/diamante-io/diamwallet-sdk)
+- [Example Project](https://github.com/diamante-io/diamwallet-sdk/tree/main/Example)
 
 ## Support
 
