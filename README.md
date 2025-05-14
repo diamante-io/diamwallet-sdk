@@ -1,4 +1,3 @@
-
 <p align="center">
   <img src="https://play-lh.googleusercontent.com/HM0G9lgsAtzbpkujqhPA86CR04tgzDUOAviER5yARNBlOsqSpamW8ZtjTJ1Snl1yMGJv=w240-h480-rw" alt="DIAM Wallet Logo" style="border-radius: 20%; width: 200px; height: 200px;">
 </p>
@@ -13,7 +12,6 @@ The DIAM Wallet SDK allows developers to seamlessly connect their dApps with bot
 
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue?style=flat-square)
 ![Platform: Android](https://img.shields.io/badge/platform-Android-green?style=flat-square)
-![Platform: Web](https://img.shields.io/badge/platform-Web-orange?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![npm version](https://img.shields.io/npm/v/diamwallet-sdk.svg?style=flat-square)
 ![Build status](https://img.shields.io/github/actions/workflow/status/diamante-io/diamwallet-sdk/ci.yml?branch=main&label=CI&logo=github&style=flat-square)
@@ -37,7 +35,7 @@ yarn add diamwallet-sdk
 ```
 
 ```sh
-npm install --save diamwallet-sdk 
+npm install --save diamwallet-sdk
 ```
 
 ### iOS Setup
@@ -61,14 +59,14 @@ npm i --save @react-native-async-storage/async-storage
 ```
 
 ```javascript
-import React from 'react';
-import DIAMWalletConnectionSDK from 'diamwallet-sdk';
+import React from "react";
+import DIAMWalletConnectionSDK from "diamwallet-sdk";
 
 const diamWalletSdk = new DIAMWalletConnectionSDK({
-  platform: 'mobile',
-  appCallback: 'app-scheme://callback',
-  appName: 'Demo App',
-  network: 'testnet', // or "mainnet"
+  platform: "mobile",
+  appCallback: "app-scheme://callback",
+  appName: "Demo App",
+  network: "testnet", // or "mainnet"
 });
 ```
 
@@ -81,8 +79,8 @@ npm i --save web-vitals
 ```
 
 ```javascript
-import React from 'react';
-import DIAMWalletConnectionSDK from 'diamwallet-sdk';
+import React from "react";
+import DIAMWalletConnectionSDK from "diamwallet-sdk";
 
 const diamWalletSdk = new DIAMWalletConnectionSDK({
   platform: "web",
@@ -113,18 +111,18 @@ Establishes connection with DIAM Wallet and returns user's wallet address.
 ```javascript
 const connectWallet = async () => {
   try {
-    console.log('Connecting wallet...');
+    console.log("Connecting wallet...");
     const result = await diamWalletSdk.connectWallet();
-    console.log('Wallet connected!', result);
-    
+    console.log("Wallet connected!", result);
+
     if (result.status === true) {
       setAddress(result.address);
       setConnectionStatus(result.status);
     } else {
-      Alert.alert('Errors', result.data, [{text: 'OK'}]);
+      Alert.alert("Errors", result.data, [{ text: "OK" }]);
     }
   } catch (error) {
-    console.error('Failed to connect wallet:', error);
+    console.error("Failed to connect wallet:", error);
     setConnectionStatus(false);
     Alert.alert(`Failed to connect: \n${error.message}`);
   }
@@ -138,7 +136,7 @@ const connectWallet = async () => {
   try {
     console.log("Connecting...");
     const result = await sdk.connectWallet();
-    
+
     if (result.status === true) {
       setConnectionStatus(result.status);
       setWalletAddress(result.address);
@@ -201,17 +199,17 @@ Sends a new transaction to a specified address.
 ```javascript
 const sendTransaction = async () => {
   let transactionData = {
-    amount: "10",  // sending amount
-    toAddress: "GBVKH4ZK6QWETZTQFLQ3JMGXKMRVRK3ZPZ3Z4ACQXY42J6P7F5DRZYNY",  // receiver address
+    amount: "10", // sending amount
+    toAddress: "GBVKH4ZK6QWETZTQFLQ3JMGXKMRVRK3ZPZ3Z4ACQXY42J6P7F5DRZYNY", // receiver address
     signTransaction: false,
   };
-  
+
   try {
     const result = await diamWalletSdk.sendTransaction(transactionData);
     console.log(result);
   } catch (error) {
-    console.error('Failed to send transaction:', error);
-  } 
+    console.error("Failed to send transaction:", error);
+  }
 };
 ```
 
@@ -241,19 +239,19 @@ Signs a transaction without broadcasting it to the network.
 ```
 
 ```javascript
-const signTransaction = async () => {   
+const signTransaction = async () => {
   let transactionData = {
-    amount: "10",  // sending amount
-    toAddress: "GBVKH4ZK6QWETZTQFLQ3JMGXKMRVRK3ZPZ3Z4ACQXY42J6P7F5DRZYNY",  // receiver address
+    amount: "10", // sending amount
+    toAddress: "GBVKH4ZK6QWETZTQFLQ3JMGXKMRVRK3ZPZ3Z4ACQXY42J6P7F5DRZYNY", // receiver address
     signTransaction: true,
   };
-  
+
   try {
     const result = await diamWalletSdk.sendTransaction(transactionData);
     console.log(result);
   } catch (error) {
-    console.error('Failed to sign transaction:', error);
-  } 
+    console.error("Failed to sign transaction:", error);
+  }
 };
 ```
 
@@ -285,13 +283,13 @@ const sendSignedXDRTransaction = async () => {
     signTransaction: false,
     xdr: selectedXDR,
   };
-  
+
   try {
     const result = await diamWalletSdk.sendTransaction(transactionData);
     console.log(result);
   } catch (error) {
     console.error("Failed to send transaction:", error);
-  } 
+  }
 };
 ```
 
@@ -302,14 +300,14 @@ Validates if a given address is formatted correctly.
 **Parameters:**
 
 ```typescript
-publicAddress: string    // Address to validate
+publicAddress: string; // Address to validate
 ```
 
 **Returns:**
 
 ```typescript
 {
-  valid: boolean
+  valid: boolean;
 }
 ```
 
@@ -318,7 +316,7 @@ const addressValidation = async () => {
   let valid = await diamWalletSdk.validatePublicAddress(
     "GBVKH4ZK6QWETZTQFLQ3JMGXKMRVRK3ZPZ3Z4ACQXY42J6P7F5DRZYNY" // receiver address
   );
-  console.log(valid); // {valid: true/false} 
+  console.log(valid); // {valid: true/false}
 };
 ```
 
@@ -348,12 +346,12 @@ const disconnectWallet = async () => {
 
 ## Configuration Options
 
-| Option | Type | Description | Mandatory |
-|--------|------|-------------|-----------|
-| `diamWalletOptions.platform` | string | Name of your platform | Yes |
-| `diamWalletOptions.appCallback` | string | URL of your dApp | Yes |
-| `diamWalletOptions.appName` | string | Name of your dApp | Yes |
-| `diamWalletOptions.network` | string | Network name ("testnet" or "mainnet") | Yes |
+| Option                          | Type   | Description                           | Mandatory |
+| ------------------------------- | ------ | ------------------------------------- | --------- |
+| `diamWalletOptions.platform`    | string | Name of your platform                 | Yes       |
+| `diamWalletOptions.appCallback` | string | URL of your dApp                      | Yes       |
+| `diamWalletOptions.appName`     | string | Name of your dApp                     | Yes       |
+| `diamWalletOptions.network`     | string | Network name ("testnet" or "mainnet") | Yes       |
 
 ## Available Methods
 

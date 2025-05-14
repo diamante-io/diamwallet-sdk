@@ -1,5 +1,5 @@
 {
-  "name": "diamwallet-sdk",
+  "name": "diamwallet-sdk-react-native",
   "version": "1.0.0",
   "main": "lib/index.react-native.js",
   "module": "lib/index.react-native.esm.js",
@@ -57,11 +57,12 @@
     "webpack-remove-debug": "^0.1.0"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.0.0",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "axios": "^1.7.9",
     "bufferutil": "^4.0.9",
     "crypto-browserify": "^3.12.1",
     "crypto-js": "^4.1.1",
+    "ethers": "^5.7.2",
     "react-native-send-intent": "^1.3.0",
     "sockjs-client": "^1.6.1",
     "utf-8-validate": "^5.0.10"

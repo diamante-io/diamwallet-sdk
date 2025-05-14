@@ -4,7 +4,7 @@ import WalletConnet from './WalletConnect';
 
 const App = () => {
   return (
-    <View style={{flex: 1}}>
+    <View style={{flex: 1, backgroundColor: '#fff'}}>
       <WalletConnet />
     </View>
   );

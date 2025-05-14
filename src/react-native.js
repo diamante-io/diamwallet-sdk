@@ -80,7 +80,6 @@ class ReactNativeSDK {
     const existingDta = JSON.parse(
       await AsyncStorage.getItem("DIAMWALLETDATA")
     );
-
     if (existingDta === null) {
       // this.openWallet();
 
@@ -155,6 +154,7 @@ class ReactNativeSDK {
 
         this.ws.on("data", async (data) => {
           try {
+            console.log(data);
             if (data.status === true) {
               await AsyncStorage.setItem(
                 "DIAMWALLETDATA",
@@ -162,7 +162,9 @@ class ReactNativeSDK {
               );
 
               closeWebSocket("Wallet connection successful"); // Close WebSocket after success
-              resolve(data); // Resolve the promise on success
+              resolve({ status: true, address: data.address }); // Resolve the promise on success
+            } else if (data.status == "connecting") {
+              resolve(data);
             } else {
               closeWebSocket("Failed to connect wallet ");
               reject(new Error("Failed to connect wallet "));
@@ -272,6 +274,179 @@ class ReactNativeSDK {
 
         this.ws.on("data", (data) => {
           try {
+            switch (data.status) {
+              case "completed":
+                closeWebSocket("Transaction completed"); // Close WebSocket on success
+                resolve(data.data);
+                break;
+              case "failed":
+                closeWebSocket("Transaction failed"); // Close WebSocket on failure
+                reject(new Error(data.error));
+                break;
+              case "cancelled":
+                closeWebSocket("Transaction cancelled"); // Close WebSocket on cancellation
+                reject(new Error(data.error));
+                break;
+              case "processing":
+                resolve(data.data);
+                break;
+              case "transaction_initiated":
+                resolve(data.data);
+                break;
+              default:
+                console.log("Unknown transaction status:");
+            }
+          } catch (error) {
+            closeWebSocket("Transaction failed"); // Close WebSocket on error
+            reject(error);
+          }
+        });
+
+        setTimeout(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            console.warn("Transaction timeout.");
+            closeWebSocket("Transaction timeout");
+          }
+          reject(new Error("Transaction timeout"));
+        }, timeout);
+      });
+    } catch (error) {
+      console.error("Transaction error:", error);
+      throw new Error(`Transaction failed: ${error.message}`);
+    }
+  }
+  async sendBep20OpenWallet() {
+    if (!this.sessionId) {
+      throw new Error("No active session. Call registerSession first.");
+    }
+
+    const params = {
+      sessionId: this.sessionId,
+      callback: this.appCallback,
+      appName: this.appName,
+      signTransaction: this.transData.signTransaction,
+      token: "DIAM (BEP20)",
+      network: this.network,
+    };
+    console.log(params);
+
+    if (this.transData) {
+      Object.assign(params, {
+        toAddress: this.transData.toAddress,
+        amount: this.transData.amount,
+        fromAddress: this.address,
+      });
+    }
+
+    console.log(params);
+
+    const action = this.transData ? "send" : "connect";
+
+    const url = this.createDeeplinkUrl(action, params);
+
+    // if (this.platform === "web") {
+    //   window.location.href = url;
+    // } else {
+    Linking.openURL(url).catch((err) => {
+      if (Platform.OS === "android") {
+        Linking.openURL(
+          "https://play.google.com/store/apps/details?id=com.diamante.diamwallet&hl=en_IN"
+        );
+      } else {
+        Linking.openURL(
+          "https://apps.apple.com/in/app/diam-wallet/id6450691849"
+        );
+      }
+      this.ws.close();
+    });
+  }
+  async sendBEP20Transaction(transData, timeout = 300000) {
+    try {
+      const walletData = await AsyncStorage.getItem("DIAMWALLETDATA");
+      if (!walletData) {
+        throw new Error("No wallet data found");
+      }
+
+      const { walletAddress } = JSON.parse(walletData);
+      console.log(walletAddress);
+      this.address = walletAddress;
+      this.transData = transData;
+
+      // Register transaction session
+      await this.registerSession("transaction");
+
+      return new Promise((resolve, reject) => {
+        this.ws = io(this.serverUrl, {});
+
+        let heartbeatIntervalId;
+        const HEARTBEAT_INTERVAL = 30000;
+
+        // Add connection status logging
+        this.ws.on("connecting", () => {
+          console.log("Socket attempting connection...");
+        });
+
+        this.ws.on("connect_attempt", () => {
+          console.log("Socket connection attempt...");
+        });
+
+        const closeWebSocket = (reason = "Client closing connection") => {
+          if (this.ws) {
+            this.ws.close();
+          }
+          if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
+        };
+
+        this.ws.on("connect", () => {
+          this.ws.emit(
+            "subscribe",
+            {
+              sessionId: this.sessionId,
+              action: "transaction",
+              transData: this.transData,
+              walletAddress: this.address,
+            },
+            (acknowledgement) => {
+              // Add acknowledgement callback
+              console.log("Subscribe acknowledgement:", acknowledgement);
+            }
+          );
+          this.sendBep20OpenWallet();
+          heartbeatIntervalId = setInterval(() => {
+            try {
+              if (this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: "ping" })); // Send ping
+              }
+            } catch (error) {
+              clearInterval(heartbeatIntervalId);
+              closeWebSocket("Heartbeat mechanism failed");
+            }
+          }, HEARTBEAT_INTERVAL);
+        });
+        this.ws.on("connect_error", (error) => {
+          console.error("Connection error:", error);
+          console.error("Error details:", {
+            message: error.message,
+            description: error.description,
+            type: error.type,
+            context: this.ws.io.engine?.transport,
+          });
+        });
+
+        this.ws.on("error", (error) => {
+          console.error("Socket error:", error);
+        });
+
+        this.ws.on("disconnect", (reason) => {
+          console.log(`Socket disconnected. Reason: ${reason}`);
+          this.startTransactionPolling(resolve, reject, timeout);
+          clearInterval(heartbeatIntervalId);
+        });
+
+        this.ws.on("data", (data) => {
+          try {
+            console.log(data);
+
             switch (data.status) {
               case "completed":
                 closeWebSocket("Transaction completed"); // Close WebSocket on success
@@ -543,10 +718,8 @@ class ReactNativeSDK {
             JSON.stringify({ walletAddress: data.address })
           );
           this.ws.disconnect();
-          resolve({
-            status: data.status,
-            address: data.address,
-          });
+
+          resolve({ status: true, address: data.address }); //
         } else if (Date.now() - startTime > timeout) {
           clearInterval(this.pollInterval);
           reject(new Error("Connection timeout"));
@@ -577,7 +750,6 @@ class ReactNativeSDK {
           `${this.serverUrl}/api/transaction/check-transaction/${this.sessionId}`
         );
         const data = await response.json();
-
         switch (data.status) {
           case "completed":
             closeWebSocket("Transaction completed");
@@ -676,7 +848,10 @@ class ReactNativeSDK {
       `${this.serverUrl}/api/transaction/wallet-address-validation`,
       {
         method: "POST",
-        body: JSON.stringify({ address: address, network: this.network }),
+        body: JSON.stringify({
+          address: address,
+          network: this.network,
+        }),
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
@@ -684,6 +859,30 @@ class ReactNativeSDK {
       }
     );
     let validData = await response.json();
+    if (validData.data.status === 200) {
+      return { valid: true };
+    } else {
+      return { valid: false };
+    }
+  }
+  async validateBep20PublicAddress(address, token) {
+    const response = await fetch(
+      `${this.serverUrl}/api/transaction/wallet-address-validation`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          address: address,
+          network: this.network,
+          token: token,
+        }),
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    let validData = await response.json();
+    console.log(validData);
     if (validData.data.status === 200) {
       return { valid: true };
     } else {

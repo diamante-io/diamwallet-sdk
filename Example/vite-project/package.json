@@ -4,12 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite --host --force",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "diamnet-sdk": "^1.0.2",
     "diamwallet-sdk-vite-mobile": "file:../../diamwallet-sdk-vite-mobile",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

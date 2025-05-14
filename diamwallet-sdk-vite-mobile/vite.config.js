@@ -4,6 +4,9 @@ import { resolve } from "path";
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    hmr: false, // Disables Hot Module Replacement
+  },
   build: {
     lib: {
       entry: resolve(__dirname, "src/index.js"),

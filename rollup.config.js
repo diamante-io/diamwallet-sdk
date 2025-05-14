@@ -27,6 +27,6 @@ const config = (input, output) => ({
 });
 
 export default [
-  config("src/web.js", "index.web"),
+  // config("src/web.js", "index.web"),
   config("src/react-native.js", "index.react-native"),
 ];

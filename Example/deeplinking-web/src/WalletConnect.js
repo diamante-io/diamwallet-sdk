@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import DIAMWalletConnectionSDK from "diamwallet-sdk";
 import "./WalletConnect.css";
+import { Aurora, Operation } from "diamnet-sdk";
+import { BASE_FEE } from "diamnet-sdk";
+import { TransactionBuilder } from "diamnet-sdk";
 
 const rnDiamWallet = new DIAMWalletConnectionSDK({
   platform: "web",
@@ -14,6 +17,8 @@ function WalletConnect() {
   const [address, setAddress] = useState("");
   const [balance, setBalance] = useState(null);
   const [sendView, setSendView] = useState(false);
+  const [bep20SendView, setBep20SendView] = useState(false);
+
   const [signView, setSignView] = useState(false);
   const [amount, setAmount] = useState("");
   const [publicAddress, setPublicAddress] = useState("");
@@ -33,8 +38,38 @@ function WalletConnect() {
       const result = await rnDiamWallet.connectWallet();
       console.log("Wallet connected!", result);
       if (result.status === true) {
-        setAddress(result.address);
-        setConnectionStatus(result.status);
+        const server = new Aurora.Server("https://diamtestnet.diamcircle.io/");
+
+        const _account = await server.loadAccount(result.address);
+
+        const authToken = new TransactionBuilder(_account, {
+          fee: BASE_FEE,
+          networkPassphrase: "Diamante Testnet 2024",
+        })
+          .addOperation(
+            Operation.manageData({
+              name: "Diam Stake",
+              value: "1",
+            })
+          )
+          .setTimeout(0)
+          .build();
+
+        const deductionXdr = authToken.toXDR("base64");
+        console.log(deductionXdr);
+
+        let xdr = await rnDiamWallet.sign({
+          address: result.address,
+          xdr: deductionXdr,
+        });
+
+        console.log(xdr);
+        // let balanceResponse = await rnDiamWallet.getBalance();
+        // setBalance(balanceResponse?.data?.balance || "0");
+        if (xdr.status == true) {
+          setAddress(result.address);
+          setConnectionStatus(result.status);
+        }
       } else {
         alert(`Errors: ${result.data}`);
       }
@@ -43,8 +78,6 @@ function WalletConnect() {
       setConnectionStatus(false);
       alert(`Failed to connect: \n${error.message}`);
     } finally {
-      let balanceResponse = await rnDiamWallet.getBalance();
-      setBalance(balanceResponse?.data?.balance || "0");
     }
   };
 
@@ -152,6 +185,51 @@ function WalletConnect() {
     }
   };
 
+  const bep20AddressValidation = async () => {
+    console.log("first", publicAddress);
+    let valid = await rnDiamWallet.validateBep20PublicAddress(
+      publicAddress,
+      "DIAM (BEP20)" // Mandatory to send BEP20 DIAM
+    );
+    console.log(valid.valid, "===");
+    if (valid.valid === false) {
+      alert(`${publicAddress} \nis not a valid address`);
+      return;
+    }
+    setValidPublicAddress(valid.valid);
+  };
+
+  const TransactionBep20 = async () => {
+    let transactionData = {
+      amount: amount,
+      toAddress: publicAddress,
+      signTransaction: false,
+    };
+    try {
+      const result = await rnDiamWallet.sendBEP20Transaction(transactionData);
+      console.log("Send Initiated!---", result.success);
+      if (result.success === true) {
+        setAmount("");
+        setPublicAddress("");
+        setBep20SendView(false);
+        setValidPublicAddress(null);
+        alert(`Transaction Success\n Hash: ${result.transactionDetails.hash}`);
+      } else {
+        alert(`Transaction Failed ${result.transactionStatus}`);
+      }
+      // setAddress(result.address);
+      // setConnectionStatus(result.status);
+      // getDIAMBalance();
+    } catch (error) {
+      console.error("Failed to send transaction:", error);
+      setAmount("");
+      setPublicAddress("");
+      setBep20SendView(false);
+      setValidPublicAddress(null);
+    } finally {
+    }
+  };
+
   return (
     <div className="container">
       <h2>Status: {connectionStatus ? "Connected" : "Disconnected"}</h2>
@@ -217,7 +295,7 @@ function WalletConnect() {
             </div>
           )}
 
-          {signView && (
+          {/* {signView && (
             <div className="sign-view">
               <input
                 type="text"
@@ -264,6 +342,55 @@ function WalletConnect() {
                 Cancel
               </button>
             </div>
+          )} */}
+
+          {bep20SendView && (
+            <div className="sign-view">
+              <input
+                type="text"
+                placeholder="Enter Public Address"
+                value={publicAddress}
+                onChange={(e) => setPublicAddress(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Enter Amount"
+                value={amount}
+                onChange={(e) => {
+                  if (
+                    e.target.value === "" ||
+                    amountRejex.test(e.target.value)
+                  ) {
+                    setAmount(e.target.value);
+                  }
+                }}
+              />
+              <button
+                onClick={bep20AddressValidation}
+                disabled={!publicAddress || publicAddress.length < 5}
+              >
+                Validate Address
+              </button>
+              <button
+                onClick={TransactionBep20}
+                disabled={
+                  !amount || validPublicAddress === null || !validPublicAddress
+                }
+              >
+                Send Bep20
+              </button>
+              <button
+                onClick={() => {
+                  setAmount("");
+                  setPublicAddress("");
+                  setBep20SendView(false);
+                  setValidPublicAddress(null);
+                }}
+                className="cancel"
+              >
+                Cancel
+              </button>
+            </div>
           )}
 
           {selectedXDR && (
@@ -274,8 +401,8 @@ function WalletConnect() {
           <button className="openView" onClick={() => setSendView(true)}>
             Open Send View
           </button>
-          <button className="openView" onClick={() => setSignView(true)}>
-            Open Sign View
+          <button className="openView" onClick={() => setBep20SendView(true)}>
+            Open Send BEP20 View
           </button>
 
           <button onClick={handleDisconnect}>Disconnect Wallet</button>

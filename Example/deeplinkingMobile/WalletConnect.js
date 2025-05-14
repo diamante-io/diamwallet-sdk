@@ -8,6 +8,7 @@ function WalletConnet() {
   const [address, setAddress] = useState('');
   const [balance, setBalance] = useState(null);
   const [sendView, setSendView] = useState(false);
+  const [bep20SendView, setBep20SendView] = useState(false);
   const [signView, setSignView] = useState(false);
   const [amount, setAmount] = useState('');
   const [publicAddress, setPublicAddress] = useState('');
@@ -101,6 +102,7 @@ function WalletConnet() {
   };
   const initialzile = async () => {
     let data = await rnDiamWallet.initializeSdk();
+
     if (data) {
       setAddress(data.address);
       setConnectionStatus(data.status);
@@ -114,7 +116,22 @@ function WalletConnet() {
 
   const addressValidation = async () => {
     let valid = await rnDiamWallet.validatePublicAddress(publicAddress);
-    console.log(valid);
+    if (valid.valid === false) {
+      Alert.alert(
+        'Address Validation',
+        `${publicAddress} \n\nis not valid address`,
+      );
+      return;
+    }
+    setValicPublicAddress(valid.valid);
+  };
+  const bep20AddressValidation = async () => {
+    console.log('first', publicAddress);
+    let valid = await rnDiamWallet.validateBep20PublicAddress(
+      publicAddress,
+      'DIAM (BEP20)', // Mandatory to send BEP20 DIAM
+    );
+    console.log(valid.valid, '===');
     if (valid.valid === false) {
       Alert.alert(
         'Address Validation',
@@ -145,6 +162,43 @@ function WalletConnet() {
       // getDIAMBalance();
     } catch (error) {
       console.error('Failed to send transaction:', error);
+    } finally {
+    }
+  };
+
+  const TransactionBep20 = async () => {
+    let transactionData = {
+      amount: amount,
+      toAddress: publicAddress,
+      signTransaction: false,
+    };
+    try {
+      const result = await rnDiamWallet.sendBEP20Transaction(transactionData);
+      console.log('Send Initiated!---', result.success);
+      if (result.success === true) {
+        setAmount('');
+        setPublicAddress('');
+        setBep20SendView(false);
+        setValicPublicAddress(null);
+        Alert.alert(
+          'Transaction Success',
+          `Hash: ${result.transactionDetails.hash}`,
+          [{text: 'OK'}],
+        );
+      } else {
+        Alert.alert('Transaction Failed', result.transactionStatus, [
+          {text: 'OK'},
+        ]);
+      }
+      // setAddress(result.address);
+      // setConnectionStatus(result.status);
+      // getDIAMBalance();
+    } catch (error) {
+      console.error('Failed to send transaction:', error);
+      setAmount('');
+      setPublicAddress('');
+      setBep20SendView(false);
+      setValicPublicAddress(null);
     } finally {
     }
   };
@@ -226,7 +280,7 @@ function WalletConnet() {
                 // gap: 4,
                 width: '100%',
               }}>
-              <View style={{width: `${100 / 2.2}%`}}>
+              {/* <View style={{width: `${100 / 2.3}%`}}>
                 <Button
                   title="Sign Transaction"
                   onPress={() => {
@@ -239,14 +293,31 @@ function WalletConnet() {
 
                   // disabled={sdk.is()}
                 />
-              </View>
-              <View style={{width: `${100 / 2.2}%`}}>
+              </View> */}
+              <View style={{width: `${100 / 2.1}%`}}>
                 <Button
-                  title="Send Transaction"
+                  title="Send DIAM"
                   onPress={
                     // sendTransaction
                     () => {
                       setSendView(true);
+                      setAmount('');
+                      setPublicAddress('');
+                      setValicPublicAddress(null);
+                    }
+                  }
+                  // style={{width: '48%'}}
+
+                  // disabled={sdk.is()}
+                />
+              </View>
+              <View style={{width: `${100 / 2.1}%`}}>
+                <Button
+                  title="Send DIAM (BEP20)"
+                  onPress={
+                    // sendTransaction
+                    () => {
+                      setBep20SendView(true);
                       setAmount('');
                       setPublicAddress('');
                       setValicPublicAddress(null);
@@ -435,6 +506,103 @@ function WalletConnet() {
                         setAmount('');
                         setPublicAddress('');
                         setSignView(false);
+                        setValicPublicAddress(null);
+                      }}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+            {bep20SendView === true && (
+              <>
+                <View
+                  style={{
+                    width: '100%',
+                    borderWidth: 1,
+                    alignItems: 'center',
+                  }}>
+                  <TextInput
+                    style={{
+                      paddingVertical: 2,
+                      width: '100%',
+                      paddingHorizontal: 10,
+                      color: '#000',
+                    }}
+                    returnKeyType="done"
+                    editable={selectedXDR === ''}
+                    placeholder="Enter Public Address"
+                    value={publicAddress}
+                    keyboardType="email-address"
+                    onChangeText={e => {
+                      setPublicAddress(e);
+                      setValicPublicAddress(null);
+                    }}
+                  />
+                </View>
+                <View
+                  style={{
+                    width: '100%',
+                    borderWidth: 1,
+                    alignItems: 'center',
+                  }}>
+                  <TextInput
+                    style={{
+                      paddingVertical: 2,
+                      width: '100%',
+                      paddingHorizontal: 10,
+                      color: '#000',
+                    }}
+                    returnKeyType="done"
+                    editable={selectedXDR === ''}
+                    placeholder="Enter amount"
+                    value={amount}
+                    keyboardType="number-pad"
+                    onChangeText={e => {
+                      if (e === '' || amountRejex.test(e)) {
+                        setAmount(e);
+                      }
+                    }}
+                  />
+                </View>
+                <View
+                  style={{
+                    width: '100%',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginTop: 10,
+                  }}>
+                  <View style={{width: `30%`}}>
+                    <Button
+                      title="Validate address"
+                      onPress={bep20AddressValidation}
+                      disabled={
+                        publicAddress === '' || publicAddress.length < 5
+                      }
+                    />
+                  </View>
+                  <View style={{width: '30%'}}>
+                    {console.log(
+                      amount,
+                      validPublicAddress,
+                      validPublicAddress,
+                    )}
+                    <Button
+                      title="Send"
+                      onPress={TransactionBep20}
+                      disabled={
+                        amount === '' ||
+                        validPublicAddress === null ||
+                        validPublicAddress === false
+                      }
+                    />
+                  </View>
+                  <View style={{width: '30%'}}>
+                    <Button
+                      title="Cancel"
+                      onPress={() => {
+                        setAmount('');
+                        setPublicAddress('');
+                        setBep20SendView(false);
                         setValicPublicAddress(null);
                       }}
                     />

@@ -1,0 +1,57 @@
+# Flutter & Dart
+.dart_tool/
+.packages
+.pub-cache/
+build/
+flutter_*.png
+
+# Android
+android/.gradle/
+android/app/*.keystore
+android/app/key.properties
+android/local.properties
+android/**/generated/
+
+# iOS
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/.symlinks/
+ios/Pods/
+ios/Runner.xcworkspace/
+ios/build/
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+macos/build/
+
+# Web
+web/generated/
+web/build/
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/.vs/
+windows/build/
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/build/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Others
+*.log
+*.lock
+*.DS_Store
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Coverage
+coverage/
